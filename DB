@@ -1,0 +1,125 @@
+GreenDao 3.0 简单使用
+
+ 1. 环境搭建
+
+````
+    compile 'org.greenrobot:greendao:3.0.1'
+    compile 'org.greenrobot:greendao-generator:3.0.0'
+    compile 'net.zetetic:android-database-sqlcipher:3.5.2'  //数据库加密使用到的库
+
+     greendao {
+           schemaVersion 3   //数据库的版本 升级的时候会使用到
+            targetGenDir 'src/main/java'    生成的目录
+           daoPackage 'com.trimph.everytbetend.model.db'  生成的Dao文件包名
+       }
+
+
+         buildscript {
+            repositories {
+                 jcenter()
+                 mavenCentral()  //添加它
+            }
+        dependencies {
+        classpath 'com.android.tools.build:gradle:2.2.0'
+        classpath 'org.greenrobot:greendao-gradle-plugin:3.0.0'  //添加它
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+           }
+      }
+   ```
+
+   2. 基本使用
+      首先需要获取数据库从操作对象 DevOpenHelper他继承与SQLiteOpenHelper
+      然后通过控制器DaoMaster获取到中间类 DaoSession
+      然后通过DaoSession可以获得针对数据库的操作类   就可以进行增删改查的操作了
+      ```
+       public void updateDb(Picture picture) {
+            if (devOpenHelper == null) {
+                devOpenHelper = new DaoMaster.DevOpenHelper(context, sp);
+            }
+            daoSession = new DaoMaster(devOpenHelper.getWritableDb()).newSession();
+            daoSession.getPictureDao().update(picture);
+        }
+        ```
+    3. 关于加密库的使用
+            public void updateDb(Picture picture) {
+                if (devOpenHelper == null) {
+                    devOpenHelper = new DaoMaster.DevOpenHelper(context, sp);
+                }
+                //通过调用getEncryptedWritableDb()来加密   传入password  这个可以传入收益唯一的UUID 因为每部手机的UUID都不一样
+                //获取数据的时候也需要传入，否则获取不到数据
+                daoSession = new DaoMaster(devOpenHelper.getEncryptedWritableDb("Pwd")).newSession();
+                daoSession.getPictureDao().update(picture);
+            }
+
+     4. 注解的使用
+
+       @Entity    //标志这是一个实体类
+       public class Picture {
+           @Id(autoincrement = true)  //主键id  设置是否自动增长
+           public long id;
+           @Property(nameInDb = "imageUrl")   //字段 设置在数据库中显示的字段名
+            public String url;
+        }
+
+        (一) @Entity 定义实体
+        @nameInDb 在数据库中的名字，如不写则为实体中类名
+        @indexes 索引
+        @createInDb 是否创建表，默认为true,false时不创建
+        @schema 指定架构名称为实体
+        @active 无论是更新生成都刷新
+        (二) @Id
+        (三) @NotNull 不为null
+        (四) @Unique 唯一约束
+        (五) @ToMany 一对多
+        (六) @OrderBy 排序
+        (七) @ToOne 一对一
+        (八) @Transient 不存储在数据库中
+        (九) @generated 由greendao产生的构造函数或方法
+
+      schemaVersion： 数据库schema版本，也可以理解为数据库版本号
+      daoPackage：设置DaoMaster 、DaoSession、Dao包名
+      targetGenDir：设置DaoMaster 、DaoSession、Dao目录
+      targetGenDirTest：设置生成单元测试目录
+      generateTests：设置自动生成单元测试用例
+      4.）实体@Entity注解
+      schema：告知GreenDao当前实体属于哪个schema   不懂这是什么鬼
+      active：标记一个实体处于活动状态，活动实体有更新、删除和刷新方法
+      nameInDb：在数据中使用的别名，默认使用的是实体的类名
+      indexes：定义索引，可以跨越多个列
+      createInDb：标记创建数据库表
+      5.）基础属性注解
+      @Id :主键 Long型，可以通过@Id(autoincrement = true)设置自增长
+      @Property：设置一个非默认关系映射所对应的列名，默认是的使用字段名 举例：@Property (nameInDb="name")
+      @NotNul：设置数据库表当前列不能为空
+      @Transient ：添加次标记之后不会生成数据库表的列
+      6.)索引注解
+      @Index：使用@Index作为一个属性来创建一个索引，通过name设置索引别名，也可以通过unique给索引添加约束
+      @Unique：向数据库列添加了一个唯一的约束
+      7.）关系注解
+      @ToOne：定义与另一个实体（一个实体对象）的关系
+      @ToMany：定义与多个实体对象的关系
+
+
+      5. 数据库升级
+      - 需要重新继承OpenHelper
+      public class DbHelper extends DaoMaster.OpenHelper {
+          public DbHelper(Context context, String name) {
+              super(context, name);
+          }
+          @Override
+          public void onCreate(Database db) {
+              super.onCreate(db);
+          }
+
+          @Override
+          public void onUpgrade(Database db, int oldVersion, int newVersion) {
+              DaoMaster.createAllTables(db, true);  // greenDao升级时要加上  若是要添加其他字段
+              db.execSQL("Alter table Picture Add sex Integer");   //需要修改表示可以用到
+          }
+      }
+     然后初始化的时候就要用到
+         daoMaster = new DaoMaster(new DbHelper(context, sp).getWritableDatabase());
+          daoSession = daoMaster.newSession();
+
+      基本使用就这些了

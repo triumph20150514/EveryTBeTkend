@@ -1,0 +1,63 @@
+ AndroidEvens 使用
+
+   compile 'org.simple:androideventbus:1.0.5.1'
+
+      @Override
+       protected void onCreate(Bundle savedInstanceState) {
+           super.onCreate(savedInstanceState);
+           setContentView(R.layout.activity_main);
+           EventBus.getDefault().register(this);
+       }
+
+       //没有指定标签
+       @Subscriber
+       public void loadUser(String user){
+
+       }
+
+       //指定了tag 只有Post了指定的tag 方法才会执行
+       @Subscriber(tag = "MyFirstTag")
+       public void User(String user){
+
+       }
+
+       //指定了tag 只有Post了指定的tag 方法才会执行  指定在独立线程中
+       @Subscriber(tag = "MyFirstTag",mode = ThreadMode.ASYNC)
+       public void Users(String user){
+
+       }
+       //指定了tag 只有Post了指定的tag 方法才会执行  运行在执行Post方法的线程中
+       @Subscriber(tag = "MyFirstTag",mode = ThreadMode.POST)
+       public void Users3(String user){
+
+       }
+
+       @Override
+       protected void onDestroy() {
+           super.onDestroy();
+           EventBus.getDefault().unregister(this);
+       }
+
+  ````
+      /**
+       * 事件发布的线程模式枚举
+       *
+       * @author mrsimple
+       */
+      public enum ThreadMode {
+          /**
+           * 将事件执行在UI线程
+           */
+          MAIN,
+          /**
+           * 在发布线程执行
+           */
+          POST,
+          /**
+           * 将事件执行在一个子线程中
+           */
+          ASYNC
+      }
+
+```
+
